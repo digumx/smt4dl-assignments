@@ -165,7 +165,8 @@ print("Network's Prediction:", np.argmax(net.feedforward(x_test_vectorized[i])))
 """**Modify the following code to plot the graphs as mentioned in the assignment.**
 
 ---
-The code prints three waves on a graph. Of course, you need to change it to plot training cost and  testing cost w.r.t iteration number.
+The code prints three waves on a graph. Of course, you need to change it to plot training cost and
+testing cost w.r.t iteration number.
 """
 
 n1 = 10
