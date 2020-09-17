@@ -81,15 +81,17 @@ class Network:
         
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])] 
-        
+   
+
     def feedforward(self, x):
         """
         Return the output of the network for the input 'x'.
         """
         for b, w in zip(self.biases, self.weights):
-            x = self.activation_func(np.dot(w, x)+b)
+            x = self.activation(np.dot(w, x)+b)
         return x
-    
+   
+
     def SGD(self, training_data, epochs, mini_batch_size, learning_rate, test_data=None):
         """
         Objective: Stochastic Gradient Descent
@@ -101,12 +103,32 @@ class Network:
         5. test_data is optional in the same format as training data: can be used to calculate accuracy on each
         iteration. (Ignore test_data while implementing for first time)
         """
-        num_batches = len(training_data)/mini_batch_size
-        #TODO: Create batches, and call apply_backprop_on_batch on each batch
+        num_batches = len(training_data) // mini_batch_size                     # This must be int
         for it in range(epochs):
-            ####
+            print("Epoch ", it+1, "/", epochs)
+
+            # Shuffle training data
+            random.shuffle(training_data)
+
+            # Split into batches
+            batches = (training_data[i:i+mini_batch_size] for i in 
+                            range(0, len(training_data), mini_batch_size))
+            
+            # Backprop on each batch
+            for batch,batch_num in zip(batches, range(1, num_batches+1)):
+                print("Batch ", batch_num, "/", num_batches, end='\r')
+                self.apply_backprop_on_batch(batch, learning_rate)
+            print()
+
+            # Calculate training and testing costs and add to history
+            if(test_data != None):
+                cost_train = self.test_accuracy(training_data)
+                print("Training cost: ", cost_train) 
+                self.train_cost_history.append(cost_train) 
+                cost_test = self.test_accuracy(test_data)
+                print("Testing cost: ", cost_test) 
+                self.test_cost_history.append(cost_test) 
         
-        pass
     
     def apply_backprop_on_batch(self, batch, learning_rate):
         """
@@ -119,9 +141,18 @@ class Network:
         for x,y in batch:
             # x, y is one training example
             gradient_biases_on_example, gradient_weights_on_example = self.apply_backprop_on_example(x,y)
-            # TODO
-            pass
-        
+            gradient_biases = [db + dbi for db,dbi in                                       # Sum up 
+                                zip(gradient_biases, gradient_biases_on_example)]
+            gradient_weights = [dw + dwi for dw,dwi in 
+                                zip(gradient_weights, gradient_weights_on_example)]
+        map(lambda m: m * (learning_rate/len(batch)), gradient_biases)                       # Divide
+        map(lambda m: m * (learning_rate/len(batch)), gradient_weights)                      # and
+                                                                                             # Normalize
+        # Update weights and biases
+        self.weights = [w - dw for w,dw in zip(self.weights, gradient_weights)]
+        self.biases = [b - db for b,db in zip(self.biases, gradient_biases)]
+   
+
     def apply_backprop_on_example(self, x, y ):
         """
         Applies backpropagation and calculates partial derivates for all the weights and biases
@@ -130,75 +161,114 @@ class Network:
         """
         # First we perform a feed-forward to get the values of the inputs to each layer. We repeat
         # the code here because it also appends to a list, an operation which is unnecessary in the
-        # general feed forward.
-        inp = [x]
-        tmp = x
+        # general feed forward. We also store the activation function derivatives.
+        layer_inputs = []
+        output_activations = x
+        activation_function_derivs = []
         for w, b in zip(self.weights, self.biases):
-            tmp = self.activation_func(np.dot(w, tmp) + b)
-            inp
+            layer_inputs.insert(0, output_activations)
+            tmp = np.dot(w, output_activations) + b
+            output_activations = self.activation(tmp)
+            activation_function_derivs.insert(0, self.activation_derivative(tmp))
 
-        return biases_gradients, weigths_gradients
+
+        # Now we do backprop
+        biases_gradients = []
+        weights_gradients = []
+        # The following variable collects the term in the chain rule expansion of dC/dw for the
+        # layers before which w occurs in, chained with the derivative of the norm square.
+        chain_pre_term = np.transpose(mean_square_derivative(output_activations, y))
+
+        for w,b,i,da in zip(reversed(self.weights), 
+                            reversed(self.biases), 
+                            layer_inputs,
+                            activation_function_derivs):
+            #print("DEBUG: ", output_activations, y, chain_pre_term, self.activation_derivative)
+            chain_pre_term *= np.transpose(da)                                  # Chain sparse
+                                                                                # activation deriv
+            biases_gradients.insert(0, np.transpose(chain_pre_term))            # d(Wx + b)/db = 1
+            weights_gradients.insert(0, np.outer(chain_pre_term, i))            # Linalg checks out
+            #print("DEBUG: ", w.shape, chain_pre_term.shape, da.shape)
+            chain_pre_term = np.dot(chain_pre_term, w)                          # Chain d(Wx+b)/dx
+                                                                                #       = W
+
+        return biases_gradients, weights_gradients
     
     def test_accuracy(self, test_data):
-        pass
+        err = 0
+        for (x,y),i in zip(test_data, range(1, len(test_data)+1)):
+            print("Testing accuracy: ", i, "/", len(test_data), end='\r')
+            out = self.feedforward(x)
+            err += np.linalg.norm(out-y)**2
+        print()
+        return err / len(test_data)
 
-"""# Digit recognition using Network
 
----
-We import the data from mnist.
-"""
-
-from keras.datasets import mnist  # NOTE: keras is only used to import data
-
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
-y_train_vectorized = list(map(vectorized_result, y_train))   # This will convert digit 0 to [1.0,0,0,0..0], 1 to [0,1.0,0,0...0] and so on...
-x_train_vectorized = list(map(lambda x: np.reshape(x, (784,1))/255, x_train)) 
-# print(y_train_vectorized[0])
-
-training_data = list(zip(x_train_vectorized, y_train_vectorized))
-# print(training_data[0])
-
-x_test_vectorized = list(map(lambda x: np.reshape(x, (784,1))/255, x_test)) 
-test_data = list(zip(x_test_vectorized, y_test))   # Notice carefully that we have not vectorized the y_test
-
-net = Network([784, 16, 10])  # activation_func = relu, activation_derivative = relu_derivative)
-net.SGD(training_data[:20000], 30, 10, 0.1, test_data=test_data)   # using training_data[:20000] just to make epochs faster. Consider using full training data
-
-i = 99
-plt.imshow(x_test[i],  cmap='gray')
-print("Label is:", y_test[i])
-
-print("Network's Prediction:", np.argmax(net.feedforward(x_test_vectorized[i])))
-
-"""**Modify the following code to plot the graphs as mentioned in the assignment.**
-
----
-The code prints three waves on a graph. Of course, you need to change it to plot training cost and
-testing cost w.r.t iteration number.
-"""
-
-n1 = 10
-n2 = 20
-amp = 4
-time = [i/1000.0 for i in range (0,1000)] # for one second
-# let angular velocity be 1 radian per second
-wave1 = [amp*math.sin(n1*t)  for t in time]
-wave2 = [amp*math.sin(n2*t)  for t in time]
-#superposition of two waves is obtained by adding their values at each instance of time
-superposition = [wave1[i] + wave2[i] for i in range(len(time))]
-plt.plot(time, wave1, 'b--', label = "Wave #1")
-plt.plot(time,wave2, 'g',  label = "Wave #2")
-plt.plot(time, superposition, 'r-',  label = "Superposition of wave #1 and wave #2")
-plt.legend()
-plt.xlabel("Time - t")
-plt.ylabel("Dispacement - x")
-plt.title("Superposition of two waves")
-plt.grid()
-plt.show()
-
+# """# Digit recognition using Network
+# 
+# ---
+# We import the data from mnist.
+# """
+# 
+# # TO THE TA: On my system, I could not get keras itself installed in an easy manner. The github page for
+# # Keras (https://github.com/keras-team/keras) says that Multi-Backend Keras is being deprecated and
+# # suggests switching to tensorflow.keras. Since we are only using it for datasets, and I do have
+# # tensorflow installed, I changed the import in the next line to use tensorflow.keras
+# from tensorflow.keras.datasets import mnist  # NOTE: keras is only used to import data
+# 
+# (x_train, y_train), (x_test, y_test) = mnist.load_data()
+# y_train_vectorized = list(map(vectorized_result, y_train))   # This will convert digit 0 to [1.0,0,0,0..0], 1 to [0,1.0,0,0...0] and so on...
+# x_train_vectorized = list(map(lambda x: np.reshape(x, (784,1))/255, x_train)) 
+# # print(y_train_vectorized[0])
+# 
+# training_data = list(zip(x_train_vectorized, y_train_vectorized))
+# # print(training_data[0])
+# 
+# x_test_vectorized = list(map(lambda x: np.reshape(x, (784,1))/255, x_test)) 
+# test_data = list(zip(x_test_vectorized, y_test))   # Notice carefully that we have not vectorized the y_test
+# 
+# # TO THE TA:
+# # We will need to vectorize y_test for the test_accuracy function to work, right? So if we are going
+# # to pass test data to `SGC()`, it must be vectorized right?
+# vectorized_test_data = list(zip(x_test_vectorized, map(vectorized_result, y_test)))
+# 
+# net = Network([784, 16, 10])  # activation_func = relu, activation_derivative = relu_derivative)
+# n_epochs = 100 #30
+# net.SGD(training_data, n_epochs, 10, 0.1, test_data=vectorized_test_data)   # using training_data[:20000] just to make epochs faster. Consider using full training data
+# #net.SGD(training_data[:10000], n_epochs, 10, 0.1, test_data=training_data[:10000])   # using training_data[:20000] just to make epochs faster. Consider using full training data
+# 
+# i = 99
+# plt.imshow(x_test[i],  cmap='gray')
+# print("Label is:", y_test[i])
+# print("Network's Prediction:", np.argmax(net.feedforward(x_test_vectorized[i])))
+# plt.show()                              # TO THE TA: I need this on my system for the image to appear
+# 
+# # We print out final accuracy
+# n = 0
+# for x,y in zip(x_test_vectorized, y_test):
+#     n += 1 if y == np.argmax(net.feedforward(x)) else 0
+# 
+# print("Percent accuracy", 100 * n /len(y_test))
+# 
+# 
+# """
+# ---
+# The code prints three waves on a graph. Of course, you need to change it to plot training cost and
+# testing cost w.r.t iteration number.
+# """
+# 
+# plt.plot(range(n_epochs), net.train_cost_history, 'g',  label = "Training")
+# plt.plot(range(n_epochs), net.test_cost_history, 'r',  label = "Testing")
+# plt.legend()
+# plt.xlabel("Epochs")
+# plt.ylabel("Mean Square Cost")
+# plt.title("Training vs Testing cost over Epochs")
+# plt.grid()
+# plt.show()
+# 
+# 
+# 
 """# NN Example \#1 : Shapes"""
-
-#!pip install drawSvg
 
 import drawSvg as draw
 
