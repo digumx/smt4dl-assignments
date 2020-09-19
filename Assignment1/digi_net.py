@@ -13,15 +13,19 @@ and interpreted via `eval()`.
 Arg 1:  Name of output file to write plotting data to.
 Arg 2:  Number of epochs
 Arg 3:  Regularization parameter
+Arg 4:  (Optional) Batch size, defaults to 10
 
 All three arguements must be present when launching from the command line.
 
 We import the data from mnist.
 """
 
-from tensorflow.keras.datasets import mnist
-from network import *
 import sys
+
+from tensorflow.keras.datasets import mnist
+import matplotlib.pyplot as plt
+
+from network import *
 
 
 
@@ -45,8 +49,9 @@ x_test_vectorized = list(map(lambda x: np.reshape(x, (784,1))/255, x_test))
 
 vectorized_test_data = list(zip(x_test_vectorized, map(vectorized_result, y_test)))
 
-net = Network([784, 16, 10], regularization = float(sys.argv[3])  # activation_func = relu, activation_derivative = relu_derivative)
-n_epochs = sys.argv[2]
+net = Network([784, 16, 10], regularization = float(sys.argv[3]))  # activation_func = relu, activation_derivative = relu_derivative)
+n_epochs = int(sys.argv[2])
+batch_size = int(sys.argv[3]) if len(sys.argv) > 3 else 10
 net.SGD(training_data, n_epochs, 10, 0.1, test_data=vectorized_test_data)   
 
 
@@ -60,7 +65,7 @@ print("Percent accuracy", accuracy)
 
 # Save the plotting data
 with open(sys.argv[1], 'w') as f:
-   f.write(str(net.test_cost_history, net.train_cost_history))
+   f.write(str((net.test_cost_history, net.train_cost_history)))
 
 
 # Plot graph
@@ -69,7 +74,7 @@ plt.plot(range(n_epochs), net.test_cost_history, 'r',  label = "Testing")
 plt.legend()
 plt.xlabel("Epochs")
 plt.ylabel("Mean Square Cost")
-plt.title("DigiNet, lambda = " + sys.argv[3] + ", epochs = " + sys.argv[2])
+plt.title("DigiNet, epochs = " + sys.argv[2] + ", lambda = " + sys.argv[3])
 plt.grid()
 plt.show()
 
