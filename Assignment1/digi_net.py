@@ -74,7 +74,8 @@ plt.plot(range(n_epochs), net.test_cost_history, 'r',  label = "Testing")
 plt.legend()
 plt.xlabel("Epochs")
 plt.ylabel("Mean Square Cost")
-plt.title("DigiNet, epochs = " + sys.argv[2] + ", lambda = " + sys.argv[3])
+plt.title("DigiNet, epochs = " + sys.argv[2] + ", lambda = " + sys.argv[3] + ", batch size = " +
+        str(batch_size))
 plt.grid()
 plt.show()
 
