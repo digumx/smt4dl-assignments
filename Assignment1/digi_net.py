@@ -51,8 +51,8 @@ vectorized_test_data = list(zip(x_test_vectorized, map(vectorized_result, y_test
 
 net = Network([784, 16, 10], regularization = float(sys.argv[3]))  # activation_func = relu, activation_derivative = relu_derivative)
 n_epochs = int(sys.argv[2])
-batch_size = int(sys.argv[3]) if len(sys.argv) > 3 else 10
-net.SGD(training_data, n_epochs, 10, 0.1, test_data=vectorized_test_data)   
+batch_size = int(sys.argv[4]) if len(sys.argv) > 4 else 10
+net.SGD(training_data, n_epochs, batch_size, 0.1, test_data=vectorized_test_data)   
 
 
 # We print out final accuracy
