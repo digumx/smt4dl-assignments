@@ -295,168 +295,168 @@ plt.show()
 
 
 
-# """# NN Example \#1 : Shapes"""
-# 
-# import drawSvg as draw
-# 
-# def drawRect(d, x, y, color):
-#     d.append(draw.Rectangle(x,y,9,9, fill=color,))
-#     d.setPixelScale(2)  # Set number of pixels per geometry unit
-#     # Display in Jupyter notebook
-#     d.rasterize()  # Display as PNG
-#     return d  # Display as SVG
-# 
-# def rgb2hex(r,g,b):
-#     return "#{:02x}{:02x}{:02x}".format(r,g,b)
-# 
-# def flattenMatrix(shape):
-#     out = list()
-#     for row in shape:
-#         out.extend(row)
-#     return out
-# 
-# 
-# def drawMatrix(mat, color = None):
-#     # values expected b/w 0 and 1
-#     if color == None:
-#         r,g,b = 255,0,0
-#     else:
-#         r,g,b = color
-#     m = len(mat)
-#     n = len(mat[0])
-#     d = draw.Drawing(n*10, m*10, displayInline=False)
-#     for row in range(0,m):
-#         for col in range(0,n):
-#             x,y= col*10, (m-1-row)*10
-#             active = mat[row][col]
-#             color = rgb2hex(round(r*active), round(g*active), round(b*active))
-#             drawRect(d, x, y, color)
-#     return d
-# 
-# cap = [[0.9,0.9,0.9,0.9],[0.9,0,0,0.9],[0.9,0,0,0.9],[0,0,0,0]]
-# L_shape = [[0.9,0,0,0],[0.9,0,0,0],[0.9,0,0,0],[0.9,0.9,0.9,0.9]]
-# square = [[0.9,0.9,0.9,0.9],[0.9,0,0,0.9],[0.9,0,0,0.9],[0.9,0.9,0.9,0.9]]
-# 
-# mat = np.random.randint(low = 0, high = 2, size = (4,4))
-# drawMatrix(cap).rasterize()
-# 
-# drawMatrix(L_shape).rasterize()
-# 
-# 
-# 
-# 
-# """# Network to detect the shapes : L-Shape, Square, Cap"""
-# 
-# shape_net = Network([16,6,4], regularization=0.05)   # 16 is number of inputs, 4 is the number of outputs
-# flatten_cap = np.array(cap).reshape((16,1))
-# out = shape_net.feedforward(flatten_cap)
-# result = np.argmax(out)
-# print(out)
-# 
-# # Create dataset for training
-# def getNoiseMatrix(mat):
-#     return np.array(mat) + np.random.normal(0, .05, np.array(mat).shape)
-# drawMatrix(getNoiseMatrix(square).tolist()).rasterize()
-# 
-# training_shapes = []
-# training_shapes_labels = []  ## Label would be [Square, Cap, L, other] :: [1,0,0]
-# ## Test label mapping:  Square = 0, Cap = 1, L = 2, other = 3
-# 
-# def createShapeData(size):
-#     """
-#     This function is used to create artificial data for training shape detector
-#     """
-#     shapes = []
-#     labels = []
-#     for i in range(size//4):
-#         noised_square = getNoiseMatrix(square).reshape((16,1))
-#         noised_cap = getNoiseMatrix(cap).reshape((16,1))
-#         noised_L = getNoiseMatrix(L_shape).reshape((16,1))
-#         other =  np.random.normal(.5, .5, (16,1))
-#         
-#         shapes.extend([noised_square, noised_cap, noised_L, other])
-#         labels.extend(map(convert_to_np_label, [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]))
-#     return shapes, labels
-# 
-# def convert_to_np_label(lst):
-#     return np.array(lst).reshape(4,1)
-#         
-# training_shapes, training_labels = createShapeData(1000) 
-# test_shapes, test_labels = createShapeData(200) 
-# 
-# # TO THE TA: I have commented the code below out as since we are passing the training data to store
-# # the value of the mean square cost function, we should not do this, the testing data needs to be
-# # vectorized as well.
-# # need to convert test_labels to numbers
-# #test_labels = [np.argmax(i) for i in test_labels]
-# 
-# 
-# # zip the data for Network
-# s_training_data = list(zip(training_shapes, training_labels))
-# s_test_data = list(zip(test_shapes, test_labels))
-# 
-# print(training_labels[1])
-# drawMatrix(training_shapes[2].reshape(4,4).tolist()).rasterize()
-# 
-# 
-# 
-# 
-# 
-# """## Train the shape_net with the generated data"""
-# 
-# n_epochs_shape = 300
-# shape_net.SGD(s_training_data, n_epochs_shape, 10, 0.1, s_test_data)
-# label_map = ["Square", "Cap", "L-Shape", "Other"]
-# 
-# # helper function to apply the model to get the shape name
-# def getShape(mat):
-#     out = shape_net.feedforward(mat.reshape(16,1))
-#     result = np.argmax(out)
-#     print(result)
-#     return label_map[result]
-# 
-# 
-# 
-# 
-# 
-# """## Testing the model manually"""
-# 
-# test_mat = np.array([
-#     0.9,0.88, 0.7,  0.9,
-#     0.9,0.22,0.1,  0.9,
-#     0.9,0.21,0.02, 0.9,
-#     0.9,0.8, 0.9,  0.9]
-# ).reshape((4,4))
-# 
-# print("Predicted Shape is: ", getShape(test_mat))
-# drawMatrix(test_mat.tolist())
-# 
-# test_mat = np.array([
-#     0.9,0.2, 0.9,  0.0,
-#     0.9,0.22,0.1,  0.01,
-#     0.9,0.21,0.02, 0.02,
-#     0.9,0.8, 0.9,  0.01]
-# ).reshape((4,4))
-# 
-# print("Predicted Shape is: ", getShape(test_mat))
-# drawMatrix(test_mat.tolist())
-# 
-# #@title
-# # we can see the weights of the neurons using following
-# print(shape_net.weights[0])
-# 
-# 
-# 
-# 
-# 
-# """## Plotting graphs """
-# 
-# plt.plot(range(n_epochs_shape), shape_net.train_cost_history, 'g',  label = "Training")
-# plt.plot(range(n_epochs_shape), shape_net.test_cost_history, 'r',  label = "Testing")
-# plt.legend()
-# plt.xlabel("Epochs")
-# plt.ylabel("Mean Square Cost")
-# plt.title("Training vs Testing cost over Epochs")
-# plt.grid()
-# plt.show()
-# 
+"""# NN Example \#1 : Shapes"""
+
+import drawSvg as draw
+
+def drawRect(d, x, y, color):
+    d.append(draw.Rectangle(x,y,9,9, fill=color,))
+    d.setPixelScale(2)  # Set number of pixels per geometry unit
+    # Display in Jupyter notebook
+    d.rasterize()  # Display as PNG
+    return d  # Display as SVG
+
+def rgb2hex(r,g,b):
+    return "#{:02x}{:02x}{:02x}".format(r,g,b)
+
+def flattenMatrix(shape):
+    out = list()
+    for row in shape:
+        out.extend(row)
+    return out
+
+
+def drawMatrix(mat, color = None):
+    # values expected b/w 0 and 1
+    if color == None:
+        r,g,b = 255,0,0
+    else:
+        r,g,b = color
+    m = len(mat)
+    n = len(mat[0])
+    d = draw.Drawing(n*10, m*10, displayInline=False)
+    for row in range(0,m):
+        for col in range(0,n):
+            x,y= col*10, (m-1-row)*10
+            active = mat[row][col]
+            color = rgb2hex(round(r*active), round(g*active), round(b*active))
+            drawRect(d, x, y, color)
+    return d
+
+cap = [[0.9,0.9,0.9,0.9],[0.9,0,0,0.9],[0.9,0,0,0.9],[0,0,0,0]]
+L_shape = [[0.9,0,0,0],[0.9,0,0,0],[0.9,0,0,0],[0.9,0.9,0.9,0.9]]
+square = [[0.9,0.9,0.9,0.9],[0.9,0,0,0.9],[0.9,0,0,0.9],[0.9,0.9,0.9,0.9]]
+
+mat = np.random.randint(low = 0, high = 2, size = (4,4))
+drawMatrix(cap).rasterize()
+
+drawMatrix(L_shape).rasterize()
+
+
+
+
+"""# Network to detect the shapes : L-Shape, Square, Cap"""
+
+shape_net = Network([16,6,4], regularization=0.05)   # 16 is number of inputs, 4 is the number of outputs
+flatten_cap = np.array(cap).reshape((16,1))
+out = shape_net.feedforward(flatten_cap)
+result = np.argmax(out)
+print(out)
+
+# Create dataset for training
+def getNoiseMatrix(mat):
+    return np.array(mat) + np.random.normal(0, .05, np.array(mat).shape)
+drawMatrix(getNoiseMatrix(square).tolist()).rasterize()
+
+training_shapes = []
+training_shapes_labels = []  ## Label would be [Square, Cap, L, other] :: [1,0,0]
+## Test label mapping:  Square = 0, Cap = 1, L = 2, other = 3
+
+def createShapeData(size):
+    """
+    This function is used to create artificial data for training shape detector
+    """
+    shapes = []
+    labels = []
+    for i in range(size//4):
+        noised_square = getNoiseMatrix(square).reshape((16,1))
+        noised_cap = getNoiseMatrix(cap).reshape((16,1))
+        noised_L = getNoiseMatrix(L_shape).reshape((16,1))
+        other =  np.random.normal(.5, .5, (16,1))
+        
+        shapes.extend([noised_square, noised_cap, noised_L, other])
+        labels.extend(map(convert_to_np_label, [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]))
+    return shapes, labels
+
+def convert_to_np_label(lst):
+    return np.array(lst).reshape(4,1)
+        
+training_shapes, training_labels = createShapeData(1000) 
+test_shapes, test_labels = createShapeData(200) 
+
+# TO THE TA: I have commented the code below out as since we are passing the training data to store
+# the value of the mean square cost function, we should not do this, the testing data needs to be
+# vectorized as well.
+# need to convert test_labels to numbers
+#test_labels = [np.argmax(i) for i in test_labels]
+
+
+# zip the data for Network
+s_training_data = list(zip(training_shapes, training_labels))
+s_test_data = list(zip(test_shapes, test_labels))
+
+print(training_labels[1])
+drawMatrix(training_shapes[2].reshape(4,4).tolist()).rasterize()
+
+
+
+
+
+"""## Train the shape_net with the generated data"""
+
+n_epochs_shape = 300
+shape_net.SGD(s_training_data, n_epochs_shape, 10, 0.1, s_test_data)
+label_map = ["Square", "Cap", "L-Shape", "Other"]
+
+# helper function to apply the model to get the shape name
+def getShape(mat):
+    out = shape_net.feedforward(mat.reshape(16,1))
+    result = np.argmax(out)
+    print(result)
+    return label_map[result]
+
+
+
+
+
+"""## Testing the model manually"""
+
+test_mat = np.array([
+    0.9,0.88, 0.7,  0.9,
+    0.9,0.22,0.1,  0.9,
+    0.9,0.21,0.02, 0.9,
+    0.9,0.8, 0.9,  0.9]
+).reshape((4,4))
+
+print("Predicted Shape is: ", getShape(test_mat))
+drawMatrix(test_mat.tolist())
+
+test_mat = np.array([
+    0.9,0.2, 0.9,  0.0,
+    0.9,0.22,0.1,  0.01,
+    0.9,0.21,0.02, 0.02,
+    0.9,0.8, 0.9,  0.01]
+).reshape((4,4))
+
+print("Predicted Shape is: ", getShape(test_mat))
+drawMatrix(test_mat.tolist())
+
+#@title
+# we can see the weights of the neurons using following
+print(shape_net.weights[0])
+
+
+
+
+
+"""## Plotting graphs """
+
+plt.plot(range(n_epochs_shape), shape_net.train_cost_history, 'g',  label = "Training")
+plt.plot(range(n_epochs_shape), shape_net.test_cost_history, 'r',  label = "Testing")
+plt.legend()
+plt.xlabel("Epochs")
+plt.ylabel("Mean Square Cost")
+plt.title("Training vs Testing cost over Epochs")
+plt.grid()
+plt.show()
+
