@@ -120,6 +120,8 @@ def gen_data(num):
     data = []
     
     for n in range(num):
+        print("Generating point", n, "of", num, end="\r")
+
         # Pick number of moves
         m = random.randrange(2, 4)
         
@@ -144,7 +146,3 @@ def gen_data(num):
         data.append((move, check_move(move)))
 
     return data
-
-
-# DEBUG
-gen_data(10000)
