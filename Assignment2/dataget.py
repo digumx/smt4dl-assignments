@@ -147,4 +147,4 @@ def gen_data(num):
 
 
 # DEBUG
-print(gen_data(5))
+gen_data(10000)
