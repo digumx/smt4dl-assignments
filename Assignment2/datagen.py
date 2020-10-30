@@ -45,14 +45,27 @@ def gen_data(num):
     for n in range(num):
         print("Generating point", n, "of", num, end="\r")
 
-        # Pick number of moves
-        m = random.randrange(2, 4)
-        
-        # Permute markings into board positions
-        raw_board = [0]*(9 - 2*m)
-        raw_board.extend([1]*m)
-        raw_board.extend([2]*m)
-        random.shuffle(raw_board)
+        # Loop until a proper board is generated
+        raw_board = []
+        while True:
+            # Pick number of moves
+            m = random.randrange(2, 4)
+            
+            # Permute markings into board positions
+            raw_board = [0]*(9 - 2*m)
+            raw_board.extend([1]*m)
+            raw_board.extend([2]*m)
+            random.shuffle(raw_board)
+
+            # Check if board is a state where any player has already wone, If not, stop looking.
+            is_win = False
+            for i in range(3):
+                is_win |= raw_board[3*i] == raw_board[3*i+1] and raw_board[3*i+1] == raw_board[3*i+2]
+                is_win |= raw_board[i] == raw_board[i+3] and raw_board[i+3] == raw_board[i+6]
+            is_win |= raw_board[0] == raw_board[4] and raw_board[4] == raw_board[8]
+            is_win |= raw_board[2] == raw_board[4] and raw_board[4] == raw_board[6]
+            if not is_win:
+                break
 
         # Chose move
         raw_pick = random.choice(list(filter(lambda i: raw_board[i] == 0, range(9))))
@@ -65,7 +78,13 @@ def gen_data(num):
             pick.append(i==raw_pick)
         move.extend(pick)
 
+        # Check if any player has won
+
         # Check if move is good and append to dataset
         data.append((move, check_move(move)))
+
+    # Cache data
+    with open("./out/data.val", 'w') as f:
+        f.write(str(data))
 
     return data

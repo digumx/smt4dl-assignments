@@ -78,8 +78,7 @@ def encode_move(z3_board_from, z3_board_to, z3_move, player):
 def check_move(move):
     """
     Given a move, use Z3 to check if it is good or bad. The move is encodeed as a 36-size bit vector
-    as described above.
-    
+    as described above. Assumes no player has already won.
     """
 
     # Initialize and introduce z3 constants
@@ -110,6 +109,10 @@ def assert_valid_move(solver, z3_move):
     encoding the fact that the board position is valid as defined in the problem statement
     """
     
+    # Should not be a winning state for iether player
+    solver.add(z3.Not(encode_has_won(z3_move[:27], 1)))
+    solver.add(z3.Not(encode_has_won(z3_move[:27], 2)))
+
     # Each cell can be 0, 1 or 2
     for i in range(9):
         solver.add(z3.Not(z3.Or([z3.And(z3_move[3*i + j], z3_move[3*i + k] )
